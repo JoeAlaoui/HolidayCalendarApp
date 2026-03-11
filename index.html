@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morocco Holiday Calendar</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); padding: 30px; margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; margin-bottom: 30px; }
+        .title { font-size: 32px; font-weight: bold; color: #047857; }
+        .controls { display: flex; gap: 10px; flex-wrap: wrap; }
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s; }
+        .btn-primary { background: #059669; color: white; }
+        .btn-primary:hover { background: #047857; }
+        .btn-secondary { background: #e5e7eb; color: #374151; }
+        .btn-secondary:hover { background: #d1d5db; }
+        .btn-danger { background: #dc2626; color: white; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-purple { background: #9333ea; color: white; }
+        .btn-purple:hover { background: #7e22ce; }
+        select, input[type="date"], input[type="number"] { padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); padding: 20px; border-radius: 12px; }
+        .stat-card h3 { font-size: 14px; color: #065f46; margin-bottom: 10px; }
+        .stat-value { font-size: 36px; font-weight: bold; color: #047857; }
+        .stat-details { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; }
+        .progress-bar { width: 100%; height: 12px; background: #e5e7eb; border-radius: 6px; margin-top: 10px; overflow: hidden; }
+        .progress-fill { height: 100%; background: #059669; transition: width 0.3s; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .month-card { background: #f9fafb; padding: 15px; border-radius: 12px; }
+        .month-title { text-align: center; font-weight: bold; margin-bottom: 10px; color: #1f2937; }
+        .days-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 5px; }
+        .day-header { text-align: center; font-size: 11px; font-weight: bold; color: #6b7280; padding: 5px; }
+        .days-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+        .day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: all 0.2s; position: relative; }
+        .day:hover { transform: scale(1.1); }
+        .day-empty { background: transparent; cursor: default; }
+        .day-empty:hover { transform: none; }
+        .day-weekend { background: #dbeafe; color: #1e40af; }
+        .day-holiday { background: #fee2e2; color: #b91c1c; border: 2px solid #f87171; }
+        .day-today { background: #fef3c7; border: 2px solid #fbbf24; }
+        .day-selected { background: #e9d5ff; border: 2px solid #a855f7; }
+        .day-blackout { background: #d1d5db; color: #6b7280; cursor: not-allowed; }
+        .tooltip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #1f2937; color: white; padding: 5px 10px; border-radius: 6px; font-size: 10px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 10; }
+        .day:hover .tooltip { opacity: 1; }
+        .alert-box { background: #fef2f2; border: 2px solid #fca5a5; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .alert-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 6px; margin-bottom: 10px; }
+        .planner-box { background: #f3e8ff; border: 2px solid #c084fc; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .planner-stats { display: flex; gap: 15px; flex-wrap: wrap; }
+        .planner-stat { background: white; padding: 15px 20px; border-radius: 8px; }
+        .planner-stat-label { font-size: 11px; color: #6b7280; }
+        .planner-stat-value { font-size: 24px; font-weight: bold; margin-top: 5px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; }
+        .modal.active { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 16px; max-width: 800px; max-height: 90vh; overflow-y: auto; width: 90%; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #374151; }
+        .holiday-item { display: flex; gap: 10px; margin-bottom: 10px; }
+        .holiday-item input { flex: 1; }
+        .quick-actions { display: grid; gap: 10px; }
+        .quick-action { background: white; padding: 15px; border-radius: 8px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .quick-action:hover { border-color: #3b82f6; }
+        .hidden { display: none; }
+        @media (max-width: 768px) {
+            .header { flex-direction: column; align-items: stretch; }
+            .controls { flex-direction: column; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .calendar-grid { grid-template-columns: 1fr; }
+        }
+        @media print {
+            body { background: white; }
+            .controls, .planner-box, .alert-box { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div>
+                    <h1 class="title" id="mainTitle">Morocco Holiday Calendar</h1>
+                    <select id="yearSelect"></select>
+                </div>
+                <div class="controls">
+                    <select id="langSelect">
+                        <option value="en">🇬🇧 EN</option>
+                        <option value="fr">🇫🇷 FR</option>
+                        <option value="ar">🇲🇦 AR</option>
+                    </select>
+                    <button class="btn btn-danger" onclick="exportPDF()">📄 Export PDF</button>
+                    <button class="btn btn-purple" id="plannerBtn" onclick="togglePlanner()">📅 Planner</button>
+                    <button class="btn btn-secondary" onclick="openSettings()">⚙️ Settings</button>
+                </div>
+            </div>
+
+```
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3 id="budgetLabel">Annual Budget</h3>
+                <div class="stat-value" id="budgetValue">22</div>
+                <div class="stat-details">
+                    <span id="usedLabel">Used: <strong id="usedValue">0</strong></span>
+                    <span id="remainingLabel">Remaining: <strong id="remainingValue">22</strong></span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+                </div>
+                <div style="text-align: center; font-size: 12px; margin-top: 5px;" id="utilizationText">0% Utilization</div>
+            </div>
+
+            <div class="stat-card" style="background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%);">
+                <h3 id="alertsLabel">⚠️ Alerts</h3>
+                <div id="alertsContainer" style="max-height: 120px; overflow-y: auto;">
+                    <p style="font-size: 14px; color: #6b7280;">No alerts</p>
+                </div>
+            </div>
+
+            <div class="stat-card" style="background: linear-gradient(135deg, #dbeafe 0%, #93c5fd 100%);">
+                <h3 id="quickActionsLabel">⚡ Quick Actions</h3>
+                <div id="quickActionsContainer" class="quick-actions"></div>
+            </div>
+        </div>
+
+        <div id="plannerBox" class="planner-box hidden">
+            <h3 style="margin-bottom: 15px;">🗓️ Vacation Planner</h3>
+            <div class="planner-stats">
+                <div class="planner-stat">
+                    <div class="planner-stat-label">Total Days</div>
+                    <div class="planner-stat-value" style="color: #9333ea;" id="plannerTotal">0</div>
+                </div>
+                <div class="planner-stat">
+                    <div class="planner-stat-label">Leave Needed</div>
+                    <div class="planner-stat-value" style="color: #dc2626;" id="plannerWork">0</div>
+                </div>
+                <div class="planner-stat">
+                    <div class="planner-stat-label">Free Days</div>
+                    <div class="planner-stat-value" style="color: #059669;" id="plannerRest">0</div>
+                </div>
+                <div class="planner-stat">
+                    <div class="planner-stat-label">Efficiency</div>
+                    <div class="planner-stat-value" style="color: #047857;" id="plannerEff">0x</div>
+                </div>
+                <button class="btn btn-primary" onclick="bookVacation()">✓ Book</button>
+                <button class="btn btn-secondary" onclick="clearSelection()">✕ Clear</button>
+            </div>
+        </div>
+
+        <div id="calendarGrid" class="calendar-grid"></div>
+    </div>
+</div>
+
+<div id="settingsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>⚙️ Settings</h2>
+            <button class="close-btn" onclick="closeSettings()">×</button>
+        </div>
+        
+        <div class="form-group">
+            <label>Holidays</label>
+            <button class="btn btn-primary" onclick="addHoliday()">+ Add Holiday</button>
+            <div id="holidaysList" style="max-height: 200px; overflow-y: auto; margin-top: 10px;"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Blackout Periods</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="date" id="blackoutInput">
+                <button class="btn btn-secondary" onclick="addBlackout()">Add</button>
+            </div>
+            <div id="blackoutsList" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="form-group">
+            <label>School Holidays</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="date" id="schoolInput">
+                <button class="btn btn-secondary" onclick="addSchool()">Add</button>
+            </div>
+            <div id="schoolList" style="margin-top: 10px;"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Used Leave Days</label>
+            <input type="number" id="usedDaysInput" min="0" max="22" value="0" onchange="updateUsedDays()">
+        </div>
+    </div>
+</div>
+
+<script>
+    const TRANSLATIONS = {
+        en: {title:"Morocco Holiday Calendar",budget:"Annual Budget",used:"Used",remaining:"Remaining",utilization:"Utilization",alerts:"Alerts",quickActions:"Quick Actions",planner:"Planner",exportPdf:"Export PDF",months:['January','February','March','April','May','June','July','August','September','October','November','December'],daysShort:['M','T','W','T','F','S','S']},
+        fr: {title:"Calendrier Maroc",budget:"Budget Annuel",used:"Utilisé",remaining:"Restant",utilization:"Utilisation",alerts:"Alertes",quickActions:"Actions Rapides",planner:"Planificateur",exportPdf:"Export PDF",months:['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'],daysShort:['L','M','M','J','V','S','D']},
+        ar: {title:"تقويم المغرب",budget:"الميزانية",used:"مستخدم",remaining:"متبقي",utilization:"الاستخدام",alerts:"تنبيهات",quickActions:"إجراءات",planner:"مخطط",exportPdf:"تصدير PDF",months:['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'],daysShort:['ن','ث','ع','خ','ج','س','ح']}
+    };
+
+    let state = {
+        year: new Date().getFullYear(),
+        lang: localStorage.getItem('lang') || 'en',
+        holidays: JSON.parse(localStorage.getItem('holidays') || '[]'),
+        usedDays: parseInt(localStorage.getItem('usedDays') || '0'),
+        blackouts: JSON.parse(localStorage.getItem('blackouts') || '[]'),
+        schoolDates: JSON.parse(localStorage.getItem('schoolDates') || '[]'),
+        selectedRange: [],
+        plannerMode: false
+    };
+
+    function initHolidays(year) {
+        return [
+            {date:`${year}-01-01`,name:{en:"New Year's Day",fr:"Nouvel An",ar:"رأس السنة"}},
+            {date:`${year}-01-11`,name:{en:"Independence Manifesto",fr:"Manifeste",ar:"وثيقة الاستقلال"}},
+            {date:`${year}-03-01`,name:{en:"Eid al-Fitr",fr:"Aïd al-Fitr",ar:"عيد الفطر"}},
+            {date:`${year}-03-02`,name:{en:"Eid al-Fitr (2nd)",fr:"Aïd (2ème)",ar:"عيد الفطر (٢)"}},
+            {date:`${year}-05-01`,name:{en:"Labour Day",fr:"Fête du Travail",ar:"عيد الشغل"}},
+            {date:`${year}-05-07`,name:{en:"Eid al-Adha",fr:"Aïd al-Adha",ar:"عيد الأضحى"}},
+            {date:`${year}-05-08`,name:{en:"Eid al-Adha (2nd)",fr:"Aïd (2ème)",ar:"عيد الأضحى (٢)"}},
+            {date:`${year}-07-30`,name:{en:"Throne Day",fr:"Fête du Trône",ar:"عيد العرش"}},
+            {date:`${year}-08-06`,name:{en:"Prophet's Birthday",fr:"Mawlid",ar:"المولد النبوي"}},
+            {date:`${year}-11-06`,name:{en:"Green March",fr:"Marche Verte",ar:"المسيرة الخضراء"}},
+            {date:`${year}-11-18`,name:{en:"Independence Day",fr:"Indépendance",ar:"عيد الاستقلال"}}
+        ];
+    }
+
+    if(state.holidays.length === 0) {
+        state.holidays = initHolidays(state.year);
+        localStorage.setItem('holidays', JSON.stringify(state.holidays));
+    }
+
+    function save() {
+        localStorage.setItem('lang', state.lang);
+        localStorage.setItem('holidays', JSON.stringify(state.holidays));
+        localStorage.setItem('usedDays', state.usedDays);
+        localStorage.setItem('blackouts', JSON.stringify(state.blackouts));
+        localStorage.setItem('schoolDates', JSON.stringify(state.schoolDates));
+    }
+
+    function isWeekend(date) {
+        return [0,6].includes(date.getDay());
+    }
+
+    function isSameDay(d1, d2) {
+        return d1.toDateString() === d2.toDateString();
+    }
+
+    function isHoliday(date) {
+        return state.holidays.find(h => isSameDay(new Date(h.date), date));
+    }
+
+    function isBlackout(date) {
+        return state.blackouts.find(b => isSameDay(new Date(b), date));
+    }
+
+    function isSchool(date) {
+        return state.schoolDates.find(s => isSameDay(new Date(s), date));
+    }
+
+    function isSelected(date) {
+        return state.selectedRange.find(d => isSameDay(d, date));
+    }
+
+    function renderYearSelector() {
+        const select = document.getElementById('yearSelect');
+        select.innerHTML = '';
+        const currentYear = new Date().getFullYear();
+        for(let i = -1; i <= 3; i++) {
+            const year = currentYear + i;
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            if(year === state.year) option.selected = true;
+            select.appendChild(option);
+        }
+        select.onchange = (e) => {
+            state.year = parseInt(e.target.value);
+            render();
+        };
+    }
+
+    function updateLanguage() {
+        const txt = TRANSLATIONS[state.lang];
+        document.getElementById('mainTitle').textContent = txt.title;
+        document.getElementById('budgetLabel').textContent = txt.budget;
+        document.getElementById('alertsLabel').textContent = '⚠️ ' + txt.alerts;
+        document.getElementById('quickActionsLabel').textContent = '⚡ ' + txt.quickActions;
+        document.getElementById('usedLabel').innerHTML = txt.used + ': <strong id="usedValue">' + state.usedDays + '</strong>';
+        document.getElementById('remainingLabel').innerHTML = txt.remaining + ': <strong id="remainingValue">' + (22 - state.usedDays) + '</strong>';
+        
+        if(state.lang === 'ar') {
+            document.body.style.direction = 'rtl';
+        } else {
+            document.body.style.direction = 'ltr';
+        }
+    }
+
+    function renderCalendar() {
+        const txt = TRANSLATIONS[state.lang];
+        const grid = document.getElementById('calendarGrid');
+        grid.innerHTML = '';
+
+        for(let month = 0; month < 12; month++) {
+            const monthCard = document.createElement('div');
+            monthCard.className = 'month-card';
+
+            const monthTitle = document.createElement('div');
+            monthTitle.className = 'month-title';
+            monthTitle.textContent = txt.months[month];
+            monthCard.appendChild(monthTitle);
+
+            const daysHeader = document.createElement('div');
+            daysHeader.className = 'days-header';
+            txt.daysShort.forEach(d => {
+                const header = document.createElement('div');
+                header.className = 'day-header';
+                header.textContent = d;
+                daysHeader.appendChild(header);
+            });
+            monthCard.appendChild(daysHeader);
+
+            const daysGrid = document.createElement('div');
+            daysGrid.className = 'days-grid';
+
+            const firstDay = new Date(state.year, month, 1).getDay();
+            const start = firstDay === 0 ? 6 : firstDay - 1;
+            const daysInMonth = new Date(state.year, month + 1, 0).getDate();
+
+            for(let i = 0; i < start; i++) {
+                const empty = document.createElement('div');
+                empty.className = 'day day-empty';
+                daysGrid.appendChild(empty);
+            }
+
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            for(let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(state.year, month, day);
+                const dayEl = document.createElement('div');
+                dayEl.className = 'day';
+                dayEl.textContent = day;
+
+                const hol = isHoliday(date);
+                const black = isBlackout(date);
+                const sel = isSelected(date);
+                const tod = isSameDay(date, today);
+                const sch = isSchool(date);
+
+                if(tod) dayEl.classList.add('day-today');
+                else if(sel) dayEl.classList.add('day-selected');
+                else if(black) dayEl.classList.add('day-blackout');
+                else if(hol) {
+                    dayEl.classList.add('day-holiday');
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.textContent = hol.name[state.lang] || hol.name.en;
+                    dayEl.appendChild(tooltip);
+                }
+                else if(isWeekend(date)) dayEl.classList.add('day-weekend');
+
+                if(state.plannerMode && !black) {
+                    dayEl.onclick = () => toggleDate(date);
+                }
+
+                daysGrid.appendChild(dayEl);
+            }
+
+            monthCard.appendChild(daysGrid);
+            grid.appendChild(monthCard);
+        }
+    }
+
+    function updateStats() {
+        const remaining = 22 - state.usedDays;
+        const utilized = Math.round((state.usedDays / 22) * 100);
+        
+        document.getElementById('usedValue').textContent = state.usedDays;
+        document.getElementById('remainingValue').textContent = remaining;
+        document.getElementById('progressBar').style.width = utilized + '%';
+        document.getElementById('utilizationText').textContent = utilized + '% Utilization';
+    }
+
+    function updateQuickActions() {
+        const container = document.getElementById('quickActionsContainer');
+        const txt = TRANSLATIONS[state.lang];
+        container.innerHTML = '';
+
+        const suggestions = [];
+        state.holidays.forEach(h => {
+            const date = new Date(h.date);
+            const dow = date.getDay();
+            if(dow === 4 || dow === 2) {
+                suggestions.push({
+                    name: h.name[state.lang] || h.name.en,
+                    take: 1,
+                    get: 4
+                });
+            }
+        });
+
+        suggestions.slice(0, 3).forEach(s => {
+            const action = document.createElement('div');
+            action.className = 'quick-action';
+            action.innerHTML = `<div style="font-weight: bold; font-size: 12px;">${s.name}</div><div style="font-size: 11px; color: #6b7280;">Take ${s.take} → Get ${s.get} days</div>`;
+            container.appendChild(action);
+        });
+    }
+
+    function toggleDate(date) {
+        const idx = state.selectedRange.findIndex(d => isSameDay(d, date));
+        if(idx >= 0) {
+            state.selectedRange.splice(idx, 1);
+        } else {
+            state.selectedRange.push(date);
+            state.selectedRange.sort((a,b) => a - b);
+        }
+        updatePlannerStats();
+        renderCalendar();
+    }
+
+    function updatePlannerStats() {
+        let work = 0, rest = 0;
+        state.selectedRange.forEach(d => {
+            if(!isWeekend(d) && !isHoliday(d)) work++;
+            else rest++;
+        });
+        const total = state.selectedRange.length;
+        const eff = work > 0 ? (total / work).toFixed(1) : 0;
+
+        document.getElementById('plannerTotal').textContent = total;
+        document.getElementById('plannerWork').textContent = work;
+        document.getElementById('plannerRest').textContent = rest;
+        document.getElementById('plannerEff').textContent = eff + 'x';
+    }
+
+    function togglePlanner() {
+        state.plannerMode = !state.plannerMode;
+        const box = document.getElementById('plannerBox');
+        const btn = document.getElementById('plannerBtn');
+        
+        if(state.plannerMode) {
+            box.classList.remove('hidden');
+            btn.classList.add('btn-purple');
+            btn.classList.remove('btn-secondary');
+        } else {
+            box.classList.add('hidden');
+            btn.classList.remove('btn-purple');
+            btn.classList.add('btn-secondary');
+            state.selectedRange = [];
+        }
+        renderCalendar();
+    }
+
+    function clearSelection() {
+        state.selectedRange = [];
+        updatePlannerStats();
+        renderCalendar();
+    }
+
+    function bookVacation() {
+        const work = parseInt(document.getElementById('plannerWork').textContent);
+        if(work > 0) {
+            state.usedDays += work;
+            save();
+            state.selectedRange = [];
+            state.plannerMode = false;
+            togglePlanner();
+            render();
+        }
+    }
+
+    function openSettings() {
+        document.getElementById('settingsModal').classList.add('active');
+        renderHolidaysList();
+        renderBlackoutsList();
+        renderSchoolList();
+        document.getElementById('usedDaysInput').value = state.usedDays;
+    }
+
+    function closeSettings() {
+        document.getElementById('settingsModal').classList.remove('active');
+    }
+
+    function renderHolidaysList() {
+        const list = document.getElementById('holidaysList');
+        list.innerHTML = '';
+        state.holidays.forEach((h, i) => {
+            const item = document.createElement('div');
+            item.className = 'holiday-item';
+            item.innerHTML = `
+                <input type="date" value="${h.date}" onchange="updateHolidayDate(${i}, this.value)">
+                <input type="text" value="${h.name[state.lang] || h.name.en}" onchange="updateHolidayName(${i}, this.value)">
+                <button class="btn btn-danger" onclick="deleteHoliday(${i})">✕</button>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    function addHoliday() {
+        state.holidays.push({
+            date: `${state.year}-01-01`,
+            name: {en: 'New Holiday', fr: 'Nouveau', ar: 'جديد'}
+        });
+        save();
+        renderHolidaysList();
+    }
+
+    function updateHolidayDate(idx, value) {
+        state.holidays[idx].date = value;
+        save();
+        render();
+    }
+
+    function updateHolidayName(idx, value) {
+        state.holidays[idx].name[state.lang] = value;
+        save();
+    }
+
+    function deleteHoliday(idx) {
+        state.holidays.splice(idx, 1);
+        save();
+        renderHolidaysList();
+        render();
+    }
+
+    function addBlackout() {
+        const input = document.getElementById('blackoutInput');
+        if(input.value) {
+            state.blackouts.push(input.value);
+            save();
+            renderBlackoutsList();
+            render();
+            input.value = '';
+        }
+    }
+
+    function renderBlackoutsList() {
+        const list = document.getElementById('blackoutsList');
+        list.innerHTML = state.blackouts.map((b, i) => 
+            `<span style="display: inline-block; background: #e5e7eb; padding: 5px 10px; border-radius: 20px; margin: 5px;">
+                ${new Date(b).toLocaleDateString()} 
+                <button onclick="deleteBlackout(${i})" style="border: none; background: none; cursor: pointer;">✕</button>
+            </span>`
+        ).join('');
+    }
+
+    function deleteBlackout(idx) {
+        state.blackouts.splice(idx, 1);
+        save();
+        renderBlackoutsList();
+        render();
+    }
+
+    function addSchool() {
+        const input = document.getElementById('schoolInput');
+        if(input.value) {
+            state.schoolDates.push(input.value);
+            save();
+            renderSchoolList();
+            render();
+            input.value = '';
+        }
+    }
+
+    function renderSchoolList() {
+        const list = document.getElementById('schoolList');
+        list.innerHTML = state.schoolDates.map((s, i) => 
+            `<span style="display: inline-block; background: #d1fae5; padding: 5px 10px; border-radius: 20px; margin: 5px;">
+                ${new Date(s).toLocaleDateString()} 
+                <button onclick="deleteSchool(${i})" style="border: none; background: none; cursor: pointer;">✕</button>
+            </span>`
+        ).join('');
+    }
+
+    function deleteSchool(idx) {
+        state.schoolDates.splice(idx, 1);
+        save();
+        renderSchoolList();
+        render();
+    }
+
+    function updateUsedDays() {
+        state.usedDays = parseInt(document.getElementById('usedDaysInput').value) || 0;
+        save();
+        render();
+    }
+
+    function exportPDF() {
+        window.print();
+    }
+
+    function render() {
+        renderYearSelector();
+        updateLanguage();
+        renderCalendar();
+        updateStats();
+        updateQuickActions();
+    }
+
+    document.getElementById('langSelect').value = state.lang;
+    document.getElementById('langSelect').onchange = (e) => {
+        state.lang = e.target.value;
+        save();
+        render();
+    };
+
+    render();
+</script>
+```
+
+</body>
+</html>
