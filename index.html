@@ -93,7 +93,10 @@
                         <option value="fr">🇫🇷 FR</option>
                         <option value="ar">🇲🇦 AR</option>
                     </select>
-                    <button class="btn btn-danger" onclick="exportPDF()">📄 Export PDF</button>
+                    <button class="btn btn-danger" onclick="exportPDF()">📄 PDF</button>
+                    <button class="btn btn-secondary" onclick="exportJSON()">💾 Export JSON</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📂 Import JSON</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
                     <button class="btn btn-purple" id="plannerBtn" onclick="togglePlanner()">📅 Planner</button>
                     <button class="btn btn-secondary" onclick="openSettings()">⚙️ Settings</button>
                 </div>
@@ -591,6 +594,51 @@
 
     function exportPDF() {
         window.print();
+    }
+
+    function exportJSON() {
+        const data = {
+            holidays: state.holidays,
+            blackouts: state.blackouts,
+            schoolDates: state.schoolDates,
+            usedDays: state.usedDays,
+            year: state.year,
+            exportDate: new Date().toISOString()
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `morocco-calendar-${state.year}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importJSON(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                if (data.holidays) state.holidays = data.holidays;
+                if (data.blackouts) state.blackouts = data.blackouts;
+                if (data.schoolDates) state.schoolDates = data.schoolDates;
+                if (data.usedDays !== undefined) state.usedDays = data.usedDays;
+                if (data.year) state.year = data.year;
+                
+                save();
+                render();
+                alert('✅ Calendar imported successfully!');
+            } catch (error) {
+                alert('❌ Error importing file. Please check the JSON format.');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
     }
 
     function render() {
